@@ -1,4 +1,7 @@
 package com.example.FinalProjectCrypto1.repository.seguridad;
 
-public interface RolFuncionalidadRepository {
+import com.example.FinalProjectCrypto1.model.seguridad.RolFuncionalidad;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface RolFuncionalidadRepository extends JpaRepository<RolFuncionalidad, Integer> {
 }
