@@ -1,4 +1,4 @@
-package com.example.FinalProjectCrypto1.auth;
+package com.example.FinalProjectCrypto1.dto.seguridad;
 
 import lombok.Data;
 
