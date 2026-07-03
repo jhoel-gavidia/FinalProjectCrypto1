@@ -3,6 +3,7 @@ package com.example.FinalProjectCrypto1.auth;
 import com.example.FinalProjectCrypto1.dto.seguridad.JwtDto;
 import com.example.FinalProjectCrypto1.dto.seguridad.LoginDto;
 import com.example.FinalProjectCrypto1.dto.seguridad.RegisterRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +19,7 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<JwtDto> login(@RequestBody LoginDto request) {
+    public ResponseEntity<JwtDto> login(@Valid @RequestBody LoginDto request) {
 
         JwtDto response = authenticationService.login(request);
 
@@ -26,7 +27,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<JwtDto> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<JwtDto> register(@Valid @RequestBody RegisterRequest request) {
         JwtDto response = authenticationService.register(request);
         return ResponseEntity.ok(response);
     }
