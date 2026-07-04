@@ -1,5 +1,7 @@
 package com.example.FinalProjectCrypto1.service.gestion;
 
+import com.example.FinalProjectCrypto1.exception.DuplicateResourceException;
+import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
 import com.example.FinalProjectCrypto1.model.gestion.Categoria;
 import com.example.FinalProjectCrypto1.repository.gestion.CategoriaRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Override
     public Categoria buscarPorId(Integer id) {
         return categoriaRepository.findByIdAndEstadoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
     }
 
     @Override
@@ -31,7 +33,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setNombre(categoria.getNombre().trim());
 
         if (categoriaRepository.findByNombre(categoria.getNombre()).isPresent()) {
-            throw new RuntimeException("La categoría ya existe");
+            throw new DuplicateResourceException("La categoría ya existe");
         }
 
         categoria.setEstado(true);
@@ -52,7 +54,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         if (existente.isPresent()
                 && !existente.get().getIdCategoria().equals(id)) {
 
-            throw new RuntimeException("La categoría ya existe");
+            throw new DuplicateResourceException("La categoría ya existe");
         }
 
         categoriaBD.setNombre(categoria.getNombre());
