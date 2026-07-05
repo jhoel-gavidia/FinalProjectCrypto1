@@ -9,6 +9,8 @@ import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
 import com.example.FinalProjectCrypto1.repository.seguridad.RolRepository;
 import com.example.FinalProjectCrypto1.repository.seguridad.UsuarioRespository;
 import com.example.FinalProjectCrypto1.security.JwtService;
+import com.example.FinalProjectCrypto1.service.auditoria.AuditoriaService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,11 +24,12 @@ import org.springframework.stereotype.Service;
 public class AuthenticationService {
 
     private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final UsuarioRespository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaService auditoriaService;
+    private final HttpServletRequest httpRequest;
 
     public JwtDto login(LoginDto request) {
 
@@ -40,6 +43,17 @@ public class AuthenticationService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         String token = jwtService.generateToken(usuario);
+
+        auditoriaService.registrar(
+                usuario.getIdUsuario(),
+                "Seguridad",
+                "usuario",
+                "LOGIN",
+                usuario.getIdUsuario(),
+                null,
+                null,
+                httpRequest
+        );
 
         return new JwtDto(token);
     }
@@ -62,6 +76,17 @@ public class AuthenticationService {
 
         String token = jwtService.generateToken(usuarioGuardador);
 
+        auditoriaService.registrar(
+                usuarioGuardador.getIdUsuario(),
+                "Seguridad",
+                "usuario",
+                "INSERT",
+                usuarioGuardador.getIdUsuario(),
+                null,
+                usuarioGuardador.getUsuario(),
+                httpRequest
+        );
+
         return new JwtDto(token);
     }
 
@@ -78,5 +103,16 @@ public class AuthenticationService {
         usuario.setPassword(passwordEncoder.encode(request.getPasswordNueva()));
 
         usuarioRepository.save(usuario);
+
+        auditoriaService.registrar(
+                usuario.getIdUsuario(),
+                "Seguridad",
+                "usuario",
+                "UPDATE",
+                usuario.getIdUsuario(),
+                "password anterior (oculta)",
+                "password actualizada",
+                httpRequest
+        );
     }
 }

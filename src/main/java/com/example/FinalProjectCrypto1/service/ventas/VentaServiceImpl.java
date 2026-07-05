@@ -13,8 +13,10 @@ import com.example.FinalProjectCrypto1.repository.gestion.ProductoRepository;
 import com.example.FinalProjectCrypto1.repository.seguridad.UsuarioRespository;
 import com.example.FinalProjectCrypto1.repository.ventas.VentaDetalleRepository;
 import com.example.FinalProjectCrypto1.repository.ventas.VentaRepository;
+import com.example.FinalProjectCrypto1.service.auditoria.AuditoriaService;
 import com.example.FinalProjectCrypto1.service.procesos.KardexService;
 import com.example.FinalProjectCrypto1.twofactor.GoogleAuthenticatorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +40,8 @@ public class VentaServiceImpl implements VentaService {
     private final KardexService kardexService;
     private final GoogleAuthenticatorService googleAuthenticatorService;
     private final UsuarioRespository usuarioRepository;
+    private final AuditoriaService auditoriaService;
+    private final HttpServletRequest httpRequest;
 
     @Override
     public void registrarVenta(VentaRequest request) {
@@ -208,7 +212,21 @@ public class VentaServiceImpl implements VentaService {
 
         }
 
-        ventaRepository.save(venta);
+        Venta ventaFinal = ventaRepository.save(venta);
+
+        auditoriaService.registrar(
+                usuario.getIdUsuario(),
+                "Ventas",
+                "venta",
+                "INSERT",
+                ventaFinal.getCodVenta(),
+                null,
+                "documento=" + ventaFinal.getNumeroDocumento()
+                        + ", cliente=" + cliente.getCodCliente()
+                        + ", tipoDocumento=" + ventaFinal.getTipoDocumento()
+                        + ", total=" + ventaFinal.getTotal(),
+                httpRequest
+        );
     }
 
     private void validarTipoDocumento(Cliente cliente, String tipoDocumento) {

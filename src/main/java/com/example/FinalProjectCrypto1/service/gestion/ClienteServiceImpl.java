@@ -4,10 +4,14 @@ import com.example.FinalProjectCrypto1.exception.DuplicateResourceException;
 import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
 import com.example.FinalProjectCrypto1.model.gestion.Cliente;
 import com.example.FinalProjectCrypto1.model.gestion.TipoDocumento;
+import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
 import com.example.FinalProjectCrypto1.repository.gestion.ClienteRepository;
 import com.example.FinalProjectCrypto1.repository.gestion.TipoDocumentoRepository;
+import com.example.FinalProjectCrypto1.service.auditoria.AuditoriaService;
 import com.example.FinalProjectCrypto1.util.DesUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +24,15 @@ public class ClienteServiceImpl implements ClienteService {
     private final ClienteRepository clienteRepository;
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final DesUtil desUtil;
+    private final AuditoriaService auditoriaService;
+    private final HttpServletRequest httpRequest;
+
+    private Integer usuarioActualId() {
+        Usuario usuario = (Usuario) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return usuario.getIdUsuario();
+    }
 
     @Override
     public List<Cliente> listar() {
@@ -63,13 +76,36 @@ public class ClienteServiceImpl implements ClienteService {
         );
         cliente.setEstado(true);
 
-        return clienteRepository.save(cliente);
+        Cliente clienteGuardado = clienteRepository.save(cliente);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "cliente",
+                "INSERT",
+                clienteGuardado.getCodCliente(),
+                null,
+                clienteGuardado,
+                httpRequest
+        );
+
+        return clienteGuardado;
     }
 
     @Override
     public Cliente actualizar(Integer id, Cliente cliente) {
 
         Cliente clienteBD = buscarPorId(id);
+
+        Cliente snapshotAnterior = new Cliente(
+                clienteBD.getCodCliente(),
+                clienteBD.getTipoDocumento(),
+                clienteBD.getNumeroDocumento(),
+                clienteBD.getRazonSocial(),
+                clienteBD.getNombreCliente(),
+                clienteBD.getFechaNacimiento(),
+                clienteBD.getEstado()
+        );
 
         TipoDocumento tipoDocumento = tipoDocumentoRepository
                 .findByCodTipoDocumentoAndEstadoTrue(
@@ -101,7 +137,20 @@ public class ClienteServiceImpl implements ClienteService {
         clienteBD.setNombreCliente(cliente.getNombreCliente());
         clienteBD.setRazonSocial(cliente.getRazonSocial());
 
-        return clienteRepository.save(clienteBD);
+        Cliente clienteActualizado = clienteRepository.save(clienteBD);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "cliente",
+                "UPDATE",
+                clienteActualizado.getCodCliente(),
+                snapshotAnterior,
+                clienteActualizado,
+                httpRequest
+        );
+
+        return clienteActualizado;
     }
 
     @Override
@@ -111,7 +160,20 @@ public class ClienteServiceImpl implements ClienteService {
 
         cliente.setEstado(false);
 
-        return clienteRepository.save(cliente);
+        Cliente clienteEliminado = clienteRepository.save(cliente);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "cliente",
+                "DELETE",
+                clienteEliminado.getCodCliente(),
+                "estado: true",
+                "estado: false",
+                httpRequest
+        );
+
+        return clienteEliminado;
     }
 
     private void validarDatos(Cliente cliente, TipoDocumento tipoDocumento) {

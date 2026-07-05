@@ -4,9 +4,13 @@ import com.example.FinalProjectCrypto1.exception.DuplicateResourceException;
 import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
 import com.example.FinalProjectCrypto1.model.gestion.Categoria;
 import com.example.FinalProjectCrypto1.model.gestion.Producto;
+import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
 import com.example.FinalProjectCrypto1.repository.gestion.CategoriaRepository;
 import com.example.FinalProjectCrypto1.repository.gestion.ProductoRepository;
+import com.example.FinalProjectCrypto1.service.auditoria.AuditoriaService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +22,26 @@ public class ProductoServiceImpl implements ProductoService {
 
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final AuditoriaService auditoriaService;
+    private final HttpServletRequest httpRequest;
+
+    private Integer usuarioActualId() {
+        Usuario usuario = (Usuario) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return usuario.getIdUsuario();
+    }
+
+
+    private String resumen(Producto p) {
+        return "nombreProducto=" + p.getNombreProducto()
+                + ", codCategoria=" + p.getCategoria().getCodCategoria()
+                + ", precioUnitario=" + p.getPrecioUnitario()
+                + ", precioFraccion=" + p.getPrecioFraccion()
+                + ", cantidadUnidad=" + p.getCantidadUnidad()
+                + ", cantidadFraccion=" + p.getCantidadFraccion()
+                + ", estado=" + p.getEstado();
+    }
 
     @Override
     public List<Producto> listar() {
@@ -48,13 +72,28 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setCategoria(categoria);
         producto.setEstado(true);
 
-        return productoRepository.save(producto);
+        Producto productoGuardado = productoRepository.save(producto);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "producto",
+                "INSERT",
+                productoGuardado.getCodProducto(),
+                null,
+                resumen(productoGuardado),
+                httpRequest
+        );
+
+        return productoGuardado;
     }
 
     @Override
     public Producto actualizar(Integer id, Producto producto) {
 
         Producto productoBD = buscarPorId(id);
+
+        String snapshotAnterior = resumen(productoBD);
 
         producto.setNombreProducto(producto.getNombreProducto().trim());
 
@@ -79,7 +118,20 @@ public class ProductoServiceImpl implements ProductoService {
         productoBD.setCantidadFraccion(producto.getCantidadFraccion());
         productoBD.setCategoria(categoria);
 
-        return productoRepository.save(productoBD);
+        Producto productoActualizado = productoRepository.save(productoBD);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "producto",
+                "UPDATE",
+                productoActualizado.getCodProducto(),
+                snapshotAnterior,
+                resumen(productoActualizado),
+                httpRequest
+        );
+
+        return productoActualizado;
     }
 
     @Override
@@ -89,7 +141,20 @@ public class ProductoServiceImpl implements ProductoService {
 
         producto.setEstado(false);
 
-        return productoRepository.save(producto);
+        Producto productoEliminado = productoRepository.save(producto);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "producto",
+                "DELETE",
+                productoEliminado.getCodProducto(),
+                "estado: true",
+                "estado: false",
+                httpRequest
+        );
+
+        return productoEliminado;
     }
 
 }

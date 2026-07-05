@@ -5,7 +5,12 @@ import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
 import com.example.FinalProjectCrypto1.model.gestion.Producto;
 import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
 import com.example.FinalProjectCrypto1.repository.gestion.ProductoRepository;
+import com.example.FinalProjectCrypto1.repository.seguridad.UsuarioRespository;
+import com.example.FinalProjectCrypto1.service.auditoria.AuditoriaService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,6 +19,9 @@ public class IngresoProductoServiceImpl implements IngresoProductoService {
 
     private final ProductoRepository productoRepository;
     private final KardexService kardexService;
+    private final UsuarioRespository usuarioRepository;
+    private final AuditoriaService auditoriaService;
+    private final HttpServletRequest httpRequest;
 
     @Override
     public void registrarIngreso(IngresoProductoDTO dto) {
@@ -36,8 +44,13 @@ public class IngresoProductoServiceImpl implements IngresoProductoService {
 
         productoRepository.save(producto);
 
-        Usuario usuario = new Usuario();
-        usuario.setIdUsuario(1);
+        // antes estaba hardcodeado: usuario.setIdUsuario(1)
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        Usuario usuario = usuarioRepository.findByUsuario(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         kardexService.registrarIngreso(
                 producto,
@@ -47,6 +60,17 @@ public class IngresoProductoServiceImpl implements IngresoProductoService {
                 dto.getCantidadFraccion(),
                 usuario,
                 dto.getObservacion()
+        );
+
+        auditoriaService.registrar(
+                usuario.getIdUsuario(),
+                "Procesos",
+                "producto",
+                "INGRESO",
+                producto.getCodProducto(),
+                "unidad=" + saldoInicialUnidad + ", fraccion=" + saldoInicialFraccion,
+                "unidad=" + producto.getCantidadUnidad() + ", fraccion=" + producto.getCantidadFraccion(),
+                httpRequest
         );
 
     }

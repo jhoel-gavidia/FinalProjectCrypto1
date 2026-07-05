@@ -3,8 +3,12 @@ package com.example.FinalProjectCrypto1.service.gestion;
 import com.example.FinalProjectCrypto1.exception.DuplicateResourceException;
 import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
 import com.example.FinalProjectCrypto1.model.gestion.TipoDocumento;
+import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
 import com.example.FinalProjectCrypto1.repository.gestion.TipoDocumentoRepository;
+import com.example.FinalProjectCrypto1.service.auditoria.AuditoriaService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +19,19 @@ import java.util.Optional;
 public class TipoDocumentoServiceImpl implements TipoDocumentoService {
 
     private final TipoDocumentoRepository tipoDocumentoRepository;
+    private final AuditoriaService auditoriaService;
+    private final HttpServletRequest httpRequest;
+
+    private Integer usuarioActualId() {
+        Usuario usuario = (Usuario) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return usuario.getIdUsuario();
+    }
+
+    private String resumen(TipoDocumento t) {
+        return "descripcion=" + t.getDescripcion() + ", estado=" + t.getEstado();
+    }
 
     @Override
     public List<TipoDocumento> listar() {
@@ -39,13 +56,28 @@ public class TipoDocumentoServiceImpl implements TipoDocumentoService {
 
         tipoDocumento.setEstado(true);
 
-        return tipoDocumentoRepository.save(tipoDocumento);
+        TipoDocumento tipoDocumentoGuardado = tipoDocumentoRepository.save(tipoDocumento);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "tipo_documento",
+                "INSERT",
+                tipoDocumentoGuardado.getCodTipoDocumento(),
+                null,
+                resumen(tipoDocumentoGuardado),
+                httpRequest
+        );
+
+        return tipoDocumentoGuardado;
     }
 
     @Override
     public TipoDocumento actualizar(Integer id, TipoDocumento tipoDocumento) {
 
         TipoDocumento tipoDocumentoBD = buscarPorId(id);
+
+        String snapshotAnterior = resumen(tipoDocumentoBD);
 
         tipoDocumento.setDescripcion(tipoDocumento.getDescripcion().trim());
 
@@ -59,7 +91,20 @@ public class TipoDocumentoServiceImpl implements TipoDocumentoService {
 
         tipoDocumentoBD.setDescripcion(tipoDocumento.getDescripcion());
 
-        return tipoDocumentoRepository.save(tipoDocumentoBD);
+        TipoDocumento tipoDocumentoActualizado = tipoDocumentoRepository.save(tipoDocumentoBD);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "tipo_documento",
+                "UPDATE",
+                tipoDocumentoActualizado.getCodTipoDocumento(),
+                snapshotAnterior,
+                resumen(tipoDocumentoActualizado),
+                httpRequest
+        );
+
+        return tipoDocumentoActualizado;
     }
 
     @Override
@@ -69,7 +114,20 @@ public class TipoDocumentoServiceImpl implements TipoDocumentoService {
 
         tipoDocumento.setEstado(false);
 
-        return tipoDocumentoRepository.save(tipoDocumento);
+        TipoDocumento tipoDocumentoEliminado = tipoDocumentoRepository.save(tipoDocumento);
+
+        auditoriaService.registrar(
+                usuarioActualId(),
+                "Gestion",
+                "tipo_documento",
+                "DELETE",
+                tipoDocumentoEliminado.getCodTipoDocumento(),
+                "estado: true",
+                "estado: false",
+                httpRequest
+        );
+
+        return tipoDocumentoEliminado;
     }
 
 }
