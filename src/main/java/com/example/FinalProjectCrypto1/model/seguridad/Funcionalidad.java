@@ -1,5 +1,6 @@
 package com.example.FinalProjectCrypto1.model.seguridad;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,7 @@ public class Funcionalidad {
     @JoinColumn(name = "padre")
     private Funcionalidad padre;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "padre")
     private List<Funcionalidad> hijos;
 }
