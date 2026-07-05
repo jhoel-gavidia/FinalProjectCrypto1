@@ -25,4 +25,14 @@ public interface KardexService {
             String documento
     );
 
+    void registrarExtorno(
+            Producto producto,
+            Integer saldoInicialUnidad,
+            Integer saldoInicialFraccion,
+            Integer cantidadUnidad,
+            Integer cantidadFraccion,
+            Usuario usuario,
+            String documento
+    );
+
 }

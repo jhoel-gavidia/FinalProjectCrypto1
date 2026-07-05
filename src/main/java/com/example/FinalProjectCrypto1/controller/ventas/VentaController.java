@@ -1,5 +1,6 @@
 package com.example.FinalProjectCrypto1.controller.ventas;
 
+import com.example.FinalProjectCrypto1.dto.ventas.ExtornoRequest;
 import com.example.FinalProjectCrypto1.dto.ventas.VentaRequest;
 import com.example.FinalProjectCrypto1.service.ventas.VentaService;
 import jakarta.validation.Valid;
@@ -24,6 +25,16 @@ public class VentaController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body("Venta registrada correctamente");
+    }
+
+    @PostMapping("/extorno")
+    public ResponseEntity<String> extornarVenta(
+            @Valid @RequestBody ExtornoRequest request) {
+
+        ventaService.extornarVenta(request);
+
+        return ResponseEntity.ok("Venta extornada correctamente.");
+
     }
 
 }

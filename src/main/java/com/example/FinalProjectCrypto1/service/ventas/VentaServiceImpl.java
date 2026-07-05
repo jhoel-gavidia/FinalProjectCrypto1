@@ -1,5 +1,6 @@
 package com.example.FinalProjectCrypto1.service.ventas;
 
+import com.example.FinalProjectCrypto1.dto.ventas.ExtornoRequest;
 import com.example.FinalProjectCrypto1.dto.ventas.VentaDetalleRequest;
 import com.example.FinalProjectCrypto1.dto.ventas.VentaRequest;
 import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -225,6 +227,68 @@ public class VentaServiceImpl implements VentaService {
                         + ", cliente=" + cliente.getCodCliente()
                         + ", tipoDocumento=" + ventaFinal.getTipoDocumento()
                         + ", total=" + ventaFinal.getTotal(),
+                httpRequest
+        );
+    }
+
+    @Override
+    public void extornarVenta(ExtornoRequest request) {
+
+        Venta venta = ventaRepository.findByCodVentaAndEstadoTrue(request.getCodVenta())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Venta no encontrada o ya fue extornada"));
+
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        Usuario usuario = usuarioRepository.findByUsuario(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        List<VentaDetalle> detalles = ventaDetalleRepository.findByVenta_CodVenta(venta.getCodVenta());
+
+        for (VentaDetalle detalle : detalles) {
+
+            Producto producto = detalle.getProducto();
+
+            int saldoInicialUnidad = producto.getCantidadUnidad();
+            int saldoInicialFraccion = producto.getCantidadFraccion();
+
+            producto.setCantidadUnidad(
+                    producto.getCantidadUnidad() + detalle.getCantidadUnidad()
+            );
+
+            producto.setCantidadFraccion(
+                    producto.getCantidadFraccion() + detalle.getCantidadFraccion()
+            );
+
+            productoRepository.save(producto);
+
+            kardexService.registrarExtorno(
+                    producto,
+                    saldoInicialUnidad,
+                    saldoInicialFraccion,
+                    detalle.getCantidadUnidad(),
+                    detalle.getCantidadFraccion(),
+                    usuario,
+                    venta.getNumeroDocumento()
+            );
+        }
+
+        venta.setEstado(false);
+
+        Venta ventaExtornada = ventaRepository.save(venta);
+
+        auditoriaService.registrar(
+                usuario.getIdUsuario(),
+                "Ventas",
+                "venta",
+                "EXTORNO",
+                ventaExtornada.getCodVenta(),
+                "estado: true",
+                "estado: false" + (request.getObservacion() != null
+                        ? ", observacion=" + request.getObservacion()
+                        : ""),
                 httpRequest
         );
     }
