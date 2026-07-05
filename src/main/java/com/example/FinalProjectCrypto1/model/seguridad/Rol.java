@@ -1,6 +1,8 @@
 package com.example.FinalProjectCrypto1.model.seguridad;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -15,6 +17,8 @@ public class Rol {
     private Integer idRol;
 
 
+    @NotBlank(message = "El nombre del rol es obligatorio")
+    @Size(max = 40, message = "Máximo 40 caracteres")
     @Column(name = "nombre_rol", unique = true, length = 40)
     private String nombreRol;
 
