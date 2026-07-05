@@ -49,6 +49,12 @@ public class Usuario implements UserDetails {
     @UpdateTimestamp
     private LocalDateTime fechaModificacion;
 
+    @Column(name = "secret_key", length = 100)
+    private String secretKey;
+
+    @Column(name = "two_factor_enabled", nullable = false)
+    private Boolean twoFactorEnabled = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_"+ rol.getNombreRol()));
