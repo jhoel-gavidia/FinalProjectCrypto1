@@ -18,33 +18,33 @@ public class ProductoController {
 
     private final ProductoService productoService;
 
-    @PreAuthorize("@permisoService.tienePermiso('Roles', 'VER')")
+    @PreAuthorize("@permisoService.tienePermiso('Productos', 'VER')")
     @GetMapping
     public ResponseEntity<List<Producto>> listar() {
         return ResponseEntity.ok(productoService.listar());
     }
 
-    @PreAuthorize("@permisoService.tienePermiso('Roles', 'VER')")
+    @PreAuthorize("@permisoService.tienePermiso('Productos', 'VER')")
     @GetMapping("/{id}")
     public ResponseEntity<Producto> buscarPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(productoService.buscarPorId(id));
     }
 
-    @PreAuthorize("@permisoService.tienePermiso('Roles', 'GUARDAR')")
+    @PreAuthorize("@permisoService.tienePermiso('Productos', 'CREAR')")
     @PostMapping
     public ResponseEntity<Producto> guardar(@Valid @RequestBody Producto producto) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(productoService.guardar(producto));
     }
 
-    @PreAuthorize("@permisoService.tienePermiso('Roles', 'EDITAR')")
+    @PreAuthorize("@permisoService.tienePermiso('Productos', 'EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<Producto> actualizar(@PathVariable Integer id,
                                                @Valid @RequestBody Producto producto) {
         return ResponseEntity.ok(productoService.actualizar(id, producto));
     }
 
-    @PreAuthorize("@permisoService.tienePermiso('Roles', 'ELIMINAR')")
+    @PreAuthorize("@permisoService.tienePermiso('Productos', 'ELIMINAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Producto> eliminar(@PathVariable Integer id) {
         return ResponseEntity.ok(productoService.eliminar(id));
