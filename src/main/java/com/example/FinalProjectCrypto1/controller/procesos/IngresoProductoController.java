@@ -5,6 +5,7 @@ import com.example.FinalProjectCrypto1.service.procesos.IngresoProductoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,6 +15,7 @@ public class IngresoProductoController {
 
     private final IngresoProductoService ingresoProductoService;
 
+    @PreAuthorize("@permisoService.tienePermiso('Ingreso de Productos', 'CREAR')")
     @PostMapping
     public ResponseEntity<String> registrar(
             @Valid @RequestBody IngresoProductoDTO dto) {

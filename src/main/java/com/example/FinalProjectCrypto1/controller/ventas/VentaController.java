@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,6 +17,7 @@ public class VentaController {
 
     private final VentaService ventaService;
 
+    @PreAuthorize("@permisoService.tienePermiso('Registrar Venta', 'CREAR')")
     @PostMapping
     public ResponseEntity<String> registrarVenta(
             @Valid @RequestBody VentaRequest request) {
@@ -27,6 +29,7 @@ public class VentaController {
                 .body("Venta registrada correctamente");
     }
 
+    @PreAuthorize("@permisoService.tienePermiso('Anular Venta', 'ELIMINAR')")
     @PostMapping("/extorno")
     public ResponseEntity<String> extornarVenta(
             @Valid @RequestBody ExtornoRequest request) {

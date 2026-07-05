@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,27 +19,32 @@ public class FuncionalidadController {
 
     private final FuncionalidadService funcionalidadService;
 
+    @PreAuthorize("@permisoService.tienePermiso('Roles', 'VER')")
     @GetMapping
     public ResponseEntity<List<Funcionalidad>> listar() {
         return ResponseEntity.ok(funcionalidadService.listar());
     }
 
+    @PreAuthorize("@permisoService.tienePermiso('Roles', 'VER')")
     @GetMapping("/arbol")
     public ResponseEntity<List<FuncionalidadNodoDto>> obtenerArbol() {
         return ResponseEntity.ok(funcionalidadService.obtenerArbol());
     }
 
+    @PreAuthorize("@permisoService.tienePermiso('Roles', 'VER')")
     @GetMapping("/{id}")
     public ResponseEntity<Funcionalidad> buscarPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(funcionalidadService.buscarPorId(id));
     }
 
+    @PreAuthorize("@permisoService.tienePermiso('Roles', 'CREAR')")
     @PostMapping
     public ResponseEntity<Funcionalidad> guardar(@Valid @RequestBody Funcionalidad funcionalidad) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(funcionalidadService.guardar(funcionalidad));
     }
 
+    @PreAuthorize("@permisoService.tienePermiso('Roles', 'EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<Funcionalidad> actualizar(
             @PathVariable Integer id,
@@ -47,6 +53,7 @@ public class FuncionalidadController {
         return ResponseEntity.ok(funcionalidadService.actualizar(id, funcionalidad));
     }
 
+    @PreAuthorize("@permisoService.tienePermiso('Roles', 'ELIMINAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
         funcionalidadService.eliminar(id);
