@@ -65,12 +65,48 @@ public class KardexServiceImpl implements KardexService {
     @Override
     public void registrarVenta(
             Producto producto,
+            Integer saldoInicialUnidad,
+            Integer saldoInicialFraccion,
             Integer cantidadUnidad,
             Integer cantidadFraccion,
             Usuario usuario,
             String documento) {
 
-        // Se implementará cuando hagamos Ventas
+        TipoOperacion tipoOperacion = tipoOperacionRepository
+                .findById(2)
+                .orElseThrow(() -> new RuntimeException("Tipo de operación no encontrado"));
+
+        Kardex kardex = new Kardex();
+
+        kardex.setProducto(producto);
+        kardex.setTipoOperacion(tipoOperacion);
+
+        // Saldo antes de la venta
+        kardex.setCantidadInicial(saldoInicialUnidad);
+
+        // Cantidad vendida
+        kardex.setCantidadMovimiento(cantidadUnidad);
+
+        // Saldo después de la venta
+        kardex.setCantidadFinal(producto.getCantidadUnidad());
+
+        kardex.setSaldoUnitario(producto.getCantidadUnidad());
+
+        kardex.setSaldoFraccionario(producto.getCantidadFraccion());
+
+        kardex.setFechaHora(LocalDateTime.now());
+
+        kardex.setCodDocumento(documento);
+
+        kardex.setObservacion("Venta");
+
+        kardex.setEstado(true);
+
+        kardex.setFechaRegistro(LocalDateTime.now());
+
+        kardex.setUsuario(usuario);
+
+        kardexRepository.save(kardex);
 
     }
 

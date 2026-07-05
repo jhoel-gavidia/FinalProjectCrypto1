@@ -10,10 +10,14 @@ import com.example.FinalProjectCrypto1.model.ventas.Venta;
 import com.example.FinalProjectCrypto1.model.ventas.VentaDetalle;
 import com.example.FinalProjectCrypto1.repository.gestion.ClienteRepository;
 import com.example.FinalProjectCrypto1.repository.gestion.ProductoRepository;
+import com.example.FinalProjectCrypto1.repository.seguridad.UsuarioRespository;
 import com.example.FinalProjectCrypto1.repository.ventas.VentaDetalleRepository;
 import com.example.FinalProjectCrypto1.repository.ventas.VentaRepository;
 import com.example.FinalProjectCrypto1.service.procesos.KardexService;
+import com.example.FinalProjectCrypto1.twofactor.GoogleAuthenticatorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +36,29 @@ public class VentaServiceImpl implements VentaService {
     private final ProductoRepository productoRepository;
     private final CorrelativoService correlativoService;
     private final KardexService kardexService;
+    private final GoogleAuthenticatorService googleAuthenticatorService;
+    private final UsuarioRespository usuarioRepository;
 
     @Override
     public void registrarVenta(VentaRequest request) {
+
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        String username = authentication.getName();
+
+        Usuario usuario = usuarioRepository.findByUsuario(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        boolean valido = googleAuthenticatorService.verificarCodigo(
+                usuario.getSecretKey(),
+                request.getCodigoGoogle()
+        );
+
+        if (!valido) {
+            throw new RuntimeException("Código de Google Authenticator inválido.");
+        }
 
         Cliente cliente = clienteRepository
                 .findByCodClienteAndEstadoTrue(request.getCodCliente())
@@ -47,20 +71,23 @@ public class VentaServiceImpl implements VentaService {
                 ? "F001"
                 : "B001";
 
-        String numeroDocumento =
-                correlativoService.generarCorrelativo(serie);
+        String numeroDocumento = correlativoService.generarCorrelativo(serie);
 
         Venta venta = new Venta();
-
         venta.setCliente(cliente);
         venta.setTipoDocumento(request.getTipoDocumento());
         venta.setNumeroDocumento(numeroDocumento);
         venta.setFechaHora(LocalDateTime.now());
         venta.setEstado(true);
+        venta.setSubtotal(BigDecimal.ZERO);
+        venta.setIgv(BigDecimal.ZERO);
+        venta.setTotal(BigDecimal.ZERO);
+
+        venta = ventaRepository.save(venta);
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        venta = ventaRepository.save(venta);
+        final int FRACCIONES_POR_UNIDAD = 10;
 
         for (VentaDetalleRequest detalle : request.getDetalles()) {
 
@@ -69,27 +96,71 @@ public class VentaServiceImpl implements VentaService {
                     .orElseThrow(() ->
                             new ResourceNotFoundException("Producto no encontrado"));
 
+            if (detalle.getCantidadUnidad() == 0 &&
+                    detalle.getCantidadFraccion() == 0) {
+                throw new RuntimeException("Debe vender al menos una unidad o una fracción.");
+            }
+
+            int saldoInicialUnidad = producto.getCantidadUnidad();
+            int saldoInicialFraccion = producto.getCantidadFraccion();
+
+            // Validar unidades
             if (producto.getCantidadUnidad() < detalle.getCantidadUnidad()) {
-                throw new RuntimeException("Stock insuficiente");
+                throw new RuntimeException(
+                        "Stock insuficiente para el producto: "
+                                + producto.getNombreProducto());
             }
 
             producto.setCantidadUnidad(
                     producto.getCantidadUnidad() - detalle.getCantidadUnidad()
             );
 
-            producto.setCantidadFraccion(
-                    producto.getCantidadFraccion() - detalle.getCantidadFraccion()
-            );
+            // Manejo de fracciones
+            int fraccionesRestantes =
+                    producto.getCantidadFraccion() - detalle.getCantidadFraccion();
+
+            while (fraccionesRestantes < 0) {
+
+                if (producto.getCantidadUnidad() <= 0) {
+                    throw new RuntimeException(
+                            "Stock insuficiente de fracciones para el producto: "
+                                    + producto.getNombreProducto());
+                }
+
+                producto.setCantidadUnidad(
+                        producto.getCantidadUnidad() - 1
+                );
+
+                fraccionesRestantes += FRACCIONES_POR_UNIDAD;
+            }
+
+            producto.setCantidadFraccion(fraccionesRestantes);
 
             productoRepository.save(producto);
 
-            BigDecimal precio = producto.getPrecioUnitario();
+            BigDecimal subtotalDetalle = BigDecimal.ZERO;
 
-            BigDecimal sub = precio.multiply(
-                    BigDecimal.valueOf(detalle.getCantidadUnidad())
-            );
+            if (detalle.getCantidadUnidad() > 0) {
 
-            subtotal = subtotal.add(sub);
+                subtotalDetalle = subtotalDetalle.add(
+                        producto.getPrecioUnitario().multiply(
+                                BigDecimal.valueOf(detalle.getCantidadUnidad())
+                        )
+                );
+
+            }
+
+            if (detalle.getCantidadFraccion() > 0) {
+
+                subtotalDetalle = subtotalDetalle.add(
+                        producto.getPrecioFraccion().multiply(
+                                BigDecimal.valueOf(detalle.getCantidadFraccion())
+                        )
+                );
+
+            }
+
+            subtotal = subtotal.add(subtotalDetalle);
 
             VentaDetalle ventaDetalle = new VentaDetalle();
 
@@ -97,27 +168,32 @@ public class VentaServiceImpl implements VentaService {
             ventaDetalle.setProducto(producto);
             ventaDetalle.setCantidadUnidad(detalle.getCantidadUnidad());
             ventaDetalle.setCantidadFraccion(detalle.getCantidadFraccion());
-            ventaDetalle.setPrecio(precio);
-            ventaDetalle.setSubtotal(sub);
+
+            if (detalle.getCantidadUnidad() > 0) {
+                ventaDetalle.setPrecio(producto.getPrecioUnitario());
+            } else {
+                ventaDetalle.setPrecio(producto.getPrecioFraccion());
+            }
+
+            ventaDetalle.setSubtotal(subtotalDetalle);
 
             ventaDetalleRepository.save(ventaDetalle);
 
-            Usuario usuario = new Usuario();
-            usuario.setIdUsuario(1);
-
             kardexService.registrarVenta(
                     producto,
+                    saldoInicialUnidad,
+                    saldoInicialFraccion,
                     detalle.getCantidadUnidad(),
                     detalle.getCantidadFraccion(),
                     usuario,
                     numeroDocumento
             );
-
         }
 
         if (request.getTipoDocumento().equalsIgnoreCase("FACTURA")) {
 
-            BigDecimal igv = subtotal.multiply(new BigDecimal("0.18"))
+            BigDecimal igv = subtotal
+                    .multiply(new BigDecimal("0.18"))
                     .setScale(2, RoundingMode.HALF_UP);
 
             venta.setSubtotal(subtotal);
@@ -133,7 +209,6 @@ public class VentaServiceImpl implements VentaService {
         }
 
         ventaRepository.save(venta);
-
     }
 
     private void validarTipoDocumento(Cliente cliente, String tipoDocumento) {

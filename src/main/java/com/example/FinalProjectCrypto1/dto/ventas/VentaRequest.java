@@ -16,6 +16,9 @@ public class VentaRequest {
     @NotNull
     private Integer codCliente;
 
+    @NotNull(message = "Debe ingresar el código de Google Authenticator.")
+    private Integer codigoGoogle;
+
     @Valid
     private List<VentaDetalleRequest> detalles;
 
