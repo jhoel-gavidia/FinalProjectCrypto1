@@ -21,39 +21,35 @@ public class KardexServiceImpl implements KardexService {
     @Override
     public void registrarIngreso(
             Producto producto,
+            Integer saldoInicialUnidad,
+            Integer saldoInicialFraccion,
             Integer cantidadUnidad,
             Integer cantidadFraccion,
             Usuario usuario,
             String observacion) {
 
-        TipoOperacion tipoOperacion =
-                tipoOperacionRepository.findById(1)
-                        .orElseThrow();
+        TipoOperacion tipoOperacion = tipoOperacionRepository
+                .findById(1)
+                .orElseThrow(() -> new RuntimeException("Tipo de operación no encontrado"));
 
         Kardex kardex = new Kardex();
 
         kardex.setProducto(producto);
         kardex.setTipoOperacion(tipoOperacion);
 
-        kardex.setCantidadInicial(
-                producto.getCantidadUnidad()
-        );
+        kardex.setCantidadInicial(saldoInicialUnidad);
 
         kardex.setCantidadMovimiento(cantidadUnidad);
 
-        kardex.setCantidadFinal(
-                producto.getCantidadUnidad() + cantidadUnidad
-        );
+        kardex.setCantidadFinal(producto.getCantidadUnidad());
 
-        kardex.setSaldoUnitario(
-                producto.getCantidadUnidad()
-        );
+        kardex.setSaldoUnitario(producto.getCantidadUnidad());
 
-        kardex.setSaldoFraccionario(
-                producto.getCantidadFraccion()
-        );
+        kardex.setSaldoFraccionario(producto.getCantidadFraccion());
 
         kardex.setFechaHora(LocalDateTime.now());
+
+        kardex.setCodDocumento(null);
 
         kardex.setObservacion(observacion);
 
@@ -64,7 +60,6 @@ public class KardexServiceImpl implements KardexService {
         kardex.setUsuario(usuario);
 
         kardexRepository.save(kardex);
-
     }
 
     @Override

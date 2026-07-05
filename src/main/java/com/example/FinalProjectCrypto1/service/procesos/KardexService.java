@@ -7,6 +7,8 @@ public interface KardexService {
 
     void registrarIngreso(
             Producto producto,
+            Integer saldoInicialUnidad,
+            Integer saldoInicialFraccion,
             Integer cantidadUnidad,
             Integer cantidadFraccion,
             Usuario usuario,
