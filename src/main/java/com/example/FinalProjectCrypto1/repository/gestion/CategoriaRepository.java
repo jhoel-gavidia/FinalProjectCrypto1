@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public interface CategoriaRepository extends JpaRepository<Categoria, Integer> {
 
-    List<Categoria> findByEstadoTrueOrderByNombreAsc();
+    List<Categoria> findByEstadoTrueOrderByNombreCategoriaAsc();
 
-    Optional<Categoria> findByNombre(String nombre);
+    Optional<Categoria> findByNombreCategoriaIgnoreCase(String nombreCategoria);
 
-    Optional<Categoria> findByIdAndEstadoTrue(Integer id);
+    Optional<Categoria> findByCodCategoriaAndEstadoTrue(Integer codCategoria);
 }

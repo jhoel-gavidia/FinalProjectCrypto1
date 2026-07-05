@@ -18,21 +18,21 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     public List<Categoria> listar() {
-        return categoriaRepository.findByEstadoTrueOrderByNombreAsc();
+        return categoriaRepository.findByEstadoTrueOrderByNombreCategoriaAsc();
     }
 
     @Override
     public Categoria buscarPorId(Integer id) {
-        return categoriaRepository.findByIdAndEstadoTrue(id)
+        return categoriaRepository.findByCodCategoriaAndEstadoTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
     }
 
     @Override
     public Categoria guardar(Categoria categoria) {
 
-        categoria.setNombre(categoria.getNombre().trim());
+        categoria.setNombreCategoria(categoria.getNombreCategoria().trim());
 
-        if (categoriaRepository.findByNombre(categoria.getNombre()).isPresent()) {
+        if (categoriaRepository.findByNombreCategoriaIgnoreCase(categoria.getNombreCategoria()).isPresent()) {
             throw new DuplicateResourceException("La categoría ya existe");
         }
 
@@ -46,18 +46,18 @@ public class CategoriaServiceImpl implements CategoriaService {
 
         Categoria categoriaBD = buscarPorId(id);
 
-        categoria.setNombre(categoria.getNombre().trim());
+        categoria.setNombreCategoria(categoria.getNombreCategoria().trim());
 
         Optional<Categoria> existente =
-                categoriaRepository.findByNombre(categoria.getNombre());
+                categoriaRepository.findByNombreCategoriaIgnoreCase(categoria.getNombreCategoria());
 
         if (existente.isPresent()
-                && !existente.get().getIdCategoria().equals(id)) {
+                && !existente.get().getCodCategoria().equals(id)) {
 
             throw new DuplicateResourceException("La categoría ya existe");
         }
 
-        categoriaBD.setNombre(categoria.getNombre());
+        categoriaBD.setNombreCategoria(categoria.getNombreCategoria());
 
         return categoriaRepository.save(categoriaBD);
     }

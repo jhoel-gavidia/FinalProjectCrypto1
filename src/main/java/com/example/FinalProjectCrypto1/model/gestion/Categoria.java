@@ -1,6 +1,7 @@
 package com.example.FinalProjectCrypto1.model.gestion;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,12 +16,13 @@ public class Categoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_categoria")
-    private Integer idCategoria;
+    @Column(name = "cod_categoria")
+    private Integer codCategoria;
 
-    @Column(length = 60, nullable = false, unique = true)
-    @Size(max = 60, message = "El nombre no puede superar los 60 caracteres")
-    private String nombre;
+    @NotBlank(message = "El nombre de la categoría es obligatorio")
+    @Size(max = 60, message = "Máximo 60 caracteres")
+    @Column(name = "nombre_categoria", nullable = false, unique = true, length = 60)
+    private String nombreCategoria;
 
     @Column(nullable = false)
     private Boolean estado;

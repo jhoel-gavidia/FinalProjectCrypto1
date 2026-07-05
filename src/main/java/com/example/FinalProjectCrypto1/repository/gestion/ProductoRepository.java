@@ -8,10 +8,10 @@ import java.util.Optional;
 
 public interface ProductoRepository extends JpaRepository<Producto, Integer> {
 
-    List<Producto> findByEstadoTrueOrderByNombreAsc();
+    List<Producto> findByEstadoTrueOrderByNombreProductoAsc();
 
-    Optional<Producto> findByNombre(String nombre);
+    Optional<Producto> findByNombreProductoIgnoreCase(String nombreProducto);
 
-    Optional<Producto> findByIdAndEstadoTrue(Integer id);
+    Optional<Producto> findByCodProductoAndEstadoTrue(Integer codProducto);
 
 }
