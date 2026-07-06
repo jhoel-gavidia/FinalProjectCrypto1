@@ -36,8 +36,8 @@ public class Cliente {
     private TipoDocumento tipoDocumento;
 
     @NotBlank(message = "El número de documento es obligatorio")
-    @Size(max = 20)
-    @Column(name = "numero_documento", nullable = false)
+    @Size(max = 100)
+    @Column(name = "numero_documento", nullable = false, length = 100)
     private String numeroDocumento;
 
     @Size(max = 150)
