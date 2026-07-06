@@ -1,7 +1,7 @@
 package com.example.FinalProjectCrypto1.controller.seguridad;
 
 import com.example.FinalProjectCrypto1.dto.seguridad.AsignarPermisosRequest;
-import com.example.FinalProjectCrypto1.model.seguridad.RolFuncionalidad;
+import com.example.FinalProjectCrypto1.dto.seguridad.PermisoResponseDto;
 import com.example.FinalProjectCrypto1.service.seguridad.RolFuncionalidadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +20,13 @@ public class RolFuncionalidadController {
 
     @PreAuthorize("@permisoService.tienePermiso('Permisos', 'VER')")
     @GetMapping("/rol/{idRol}")
-    public ResponseEntity<List<RolFuncionalidad>> listarPorRol(@PathVariable Integer idRol) {
+    public ResponseEntity<List<PermisoResponseDto>> listarPorRol(@PathVariable Integer idRol) {
         return ResponseEntity.ok(rolFuncionalidadService.listarPorRol(idRol));
     }
 
     @PreAuthorize("@permisoService.tienePermiso('Permisos', 'EDITAR')")
     @PutMapping("/rol/{idRol}")
-    public ResponseEntity<List<RolFuncionalidad>> asignarPermisos(
+    public ResponseEntity<List<PermisoResponseDto>> asignarPermisos(
             @PathVariable Integer idRol,
             @Valid @RequestBody AsignarPermisosRequest request) {
 

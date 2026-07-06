@@ -2,6 +2,7 @@ package com.example.FinalProjectCrypto1.service.seguridad;
 
 import com.example.FinalProjectCrypto1.dto.seguridad.AsignarPermisosRequest;
 import com.example.FinalProjectCrypto1.dto.seguridad.PermisoItemDto;
+import com.example.FinalProjectCrypto1.dto.seguridad.PermisoResponseDto;
 import com.example.FinalProjectCrypto1.exception.ResourceNotFoundException;
 import com.example.FinalProjectCrypto1.model.seguridad.Funcionalidad;
 import com.example.FinalProjectCrypto1.model.seguridad.Rol;
@@ -37,18 +38,35 @@ public class RolFuncionalidadServiceImpl implements RolFuncionalidadService {
         return usuario.getIdUsuario();
     }
 
+    private PermisoResponseDto toDto(RolFuncionalidad permiso) {
+        return new PermisoResponseDto(
+                permiso.getIdRolFuncionalidad(),
+                permiso.getIdRol().getIdRol(),
+                permiso.getIdFuncionalidad().getIdFuncionalidad(),
+                permiso.getIdFuncionalidad().getNombre(),
+                permiso.getVer(),
+                permiso.getCrear(),
+                permiso.getEditar(),
+                permiso.getEliminar(),
+                permiso.getImprimir()
+        );
+    }
+
     @Override
-    public List<RolFuncionalidad> listarPorRol(Integer idRol) {
+    @Transactional(readOnly = true)
+    public List<PermisoResponseDto> listarPorRol(Integer idRol) {
 
         rolRepository.findById(idRol)
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado"));
 
-        return rolFuncionalidadRepository.findByIdRol_IdRol(idRol);
+        return rolFuncionalidadRepository.findByIdRol_IdRol(idRol).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public List<RolFuncionalidad> asignarPermisos(Integer idRol, AsignarPermisosRequest request) {
+    public List<PermisoResponseDto> asignarPermisos(Integer idRol, AsignarPermisosRequest request) {
 
         Rol rol = rolRepository.findById(idRol)
                 .orElseThrow(() -> new ResourceNotFoundException("Rol no encontrado"));
@@ -66,10 +84,13 @@ public class RolFuncionalidadServiceImpl implements RolFuncionalidadService {
 
         auditoriaService.registrar(
                 usuarioActualId(), "Seguridad", "rol_funcionalidad", "UPDATE",
-                idRol, permisosAnteriores, guardados, httpRequest
+                idRol, permisosAnteriores.size() + " permisos anteriores",
+                guardados.size() + " permisos nuevos", httpRequest
         );
 
-        return guardados;
+        return guardados.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     private RolFuncionalidad construirPermiso(Rol rol, PermisoItemDto item) {
