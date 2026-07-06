@@ -2,8 +2,10 @@ package com.example.FinalProjectCrypto1.twofactor;
 
 import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
 import com.example.FinalProjectCrypto1.repository.seguridad.UsuarioRespository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,13 +16,17 @@ public class GoogleAuthenticatorController {
     private final GoogleAuthenticatorService googleAuthenticatorService;
     private final UsuarioRespository usuarioRespository;
 
-    @PostMapping("/setup/{idUsuario}")
-    public ResponseEntity<GoogleAuthenticatorResponse> setup(
-            @PathVariable Integer idUsuario) {
+    private Usuario usuarioAutenticado() {
+        return (Usuario) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+    }
 
-        Usuario usuario = usuarioRespository.findById(idUsuario)
-                .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado"));
+    @PostMapping("/setup")
+    public ResponseEntity<GoogleAuthenticatorResponse> setup() {
+
+        Usuario usuario = usuarioRespository.findById(usuarioAutenticado().getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         String secret = googleAuthenticatorService.generarSecret();
 
@@ -45,12 +51,15 @@ public class GoogleAuthenticatorController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verify(
-            @RequestBody VerifyCodeRequest request) {
+    public ResponseEntity<String> verify(@Valid @RequestBody VerifyCodeRequest request) {
 
-        Usuario usuario = usuarioRespository.findById(request.getIdUsuario())
-                .orElseThrow(() ->
-                        new RuntimeException("Usuario no encontrado"));
+        Usuario usuario = usuarioRespository.findById(usuarioAutenticado().getIdUsuario())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (usuario.getSecretKey() == null) {
+            return ResponseEntity.badRequest()
+                    .body("El usuario no tiene 2FA configurado");
+        }
 
         boolean valido = googleAuthenticatorService.verificarCodigo(
                 usuario.getSecretKey(),
