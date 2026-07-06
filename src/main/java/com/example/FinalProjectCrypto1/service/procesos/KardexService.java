@@ -1,7 +1,10 @@
 package com.example.FinalProjectCrypto1.service.procesos;
 
 import com.example.FinalProjectCrypto1.model.gestion.Producto;
+import com.example.FinalProjectCrypto1.model.procesos.Kardex;
 import com.example.FinalProjectCrypto1.model.seguridad.Usuario;
+
+import java.util.List;
 
 public interface KardexService {
 
@@ -45,4 +48,7 @@ public interface KardexService {
             String observacion
     );
 
+    List<Kardex> listar();
+
+    List<Kardex> listarPorProducto(Integer codProducto);
 }

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -198,5 +199,15 @@ public class KardexServiceImpl implements KardexService {
         kardex.setUsuario(usuario);
 
         kardexRepository.save(kardex);
+    }
+
+    @Override
+    public List<Kardex> listar() {
+        return kardexRepository.findAllByOrderByFechaHoraDesc();
+    }
+
+    @Override
+    public List<Kardex> listarPorProducto(Integer codProducto) {
+        return kardexRepository.findByProducto_CodProductoOrderByFechaHoraDesc(codProducto);
     }
 }

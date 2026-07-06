@@ -315,4 +315,15 @@ public class VentaServiceImpl implements VentaService {
 
     }
 
+    @Override
+    public List<Venta> listar() {
+        return ventaRepository.findAllByOrderByFechaHoraDesc();
+    }
+
+    @Override
+    public Venta buscarPorId(Integer id) {
+        return ventaRepository.findByCodVentaAndEstadoTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Venta no encontrada"));
+    }
+
 }
